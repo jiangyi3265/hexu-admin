@@ -22,10 +22,8 @@ const useUserStore = defineStore(
       login(userInfo) {
         const username = userInfo.username.trim()
         const password = userInfo.password
-        const code = userInfo.code
-        const uuid = userInfo.uuid
         return new Promise((resolve, reject) => {
-          login(username, password, code, uuid).then(res => {
+          login(username, password).then(res => {
             setToken(res.token)
             this.token = res.token
             resolve()
@@ -38,20 +36,18 @@ const useUserStore = defineStore(
       getInfo() {
         return new Promise((resolve, reject) => {
           getInfo().then(res => {
-            const user = res.user
-            let avatar = user.avatar || ""
+            const user = res?.user
+            if (!user || typeof user !== 'object' || Array.isArray(user)) throw new Error('用户信息格式无效')
+            let avatar = typeof user.avatar === 'string' ? user.avatar : ""
             if (!isHttp(avatar)) {
               avatar = (isEmpty(avatar)) ? defAva : import.meta.env.VITE_APP_BASE_API + avatar
             }
-            if (res.roles && res.roles.length > 0) { // 验证返回的roles是否是一个非空数组
-              this.roles = res.roles
-              this.permissions = res.permissions
-            } else {
-              this.roles = ['ROLE_DEFAULT']
-            }
-            this.id = user.userId
-            this.name = user.userName
-            this.nickName = user.nickName
+            const roles = Array.isArray(res.roles) ? res.roles.filter(role => typeof role === 'string' && role) : []
+            this.roles = roles.length ? roles : ['ROLE_DEFAULT']
+            this.permissions = roles.length && Array.isArray(res.permissions) ? res.permissions.filter(permission => typeof permission === 'string' && permission) : []
+            this.id = user.userId ?? ''
+            this.name = user.userName ?? ''
+            this.nickName = user.nickName ?? ''
             this.avatar = avatar
             /* 初始密码提示 */
             if(res.isDefaultModifyPwd) {
@@ -67,22 +63,24 @@ const useUserStore = defineStore(
             }
             resolve(res)
           }).catch(error => {
+            this.roles = []
+            this.permissions = []
             reject(error)
           })
         })
       },
       // 退出系统
       logOut() {
-        return new Promise((resolve, reject) => {
-          logout(this.token).then(() => {
-            this.token = ''
-            this.roles = []
-            this.permissions = []
-            removeToken()
-            resolve()
-          }).catch(error => {
-            reject(error)
-          })
+        // A failed remote revocation must not prevent local sign-out / navigation.
+        return Promise.resolve().then(() => logout(this.token)).catch(() => {}).finally(() => {
+          this.token = ''
+          this.id = ''
+          this.name = ''
+          this.nickName = ''
+          this.avatar = ''
+          this.roles = []
+          this.permissions = []
+          removeToken()
         })
       }
     }

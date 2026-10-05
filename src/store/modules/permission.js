@@ -33,9 +33,9 @@ const usePermissionStore = defineStore(
         this.sidebarRouters = routes
       },
       generateRoutes(roles) {
-        return new Promise(resolve => {
-          // 向后端请求路由数据
-          getRouters().then(res => {
+        // Return the complete chain so transport and malformed-menu failures reject.
+        return getRouters().then(res => {
+            if (!Array.isArray(res.data)) throw new Error('菜单数据格式无效')
             const sdata = JSON.parse(JSON.stringify(res.data))
             const rdata = JSON.parse(JSON.stringify(res.data))
             const defaultData = JSON.parse(JSON.stringify(res.data))
@@ -48,8 +48,7 @@ const usePermissionStore = defineStore(
             this.setSidebarRouters(constantRoutes.concat(sidebarRoutes))
             this.setDefaultRoutes(sidebarRoutes)
             this.setTopbarRoutes(defaultRoutes)
-            resolve(rewriteRoutes)
-          })
+            return rewriteRoutes
         })
       }
     }

@@ -25,21 +25,6 @@
           <template #prefix><svg-icon icon-class="password" class="el-input__icon input-icon" /></template>
         </el-input>
       </el-form-item>
-      <el-form-item prop="code" v-if="captchaEnabled">
-        <el-input
-          v-model="loginForm.code"
-          size="large"
-          auto-complete="off"
-          placeholder="验证码"
-          style="width: 63%"
-          @keyup.enter="handleLogin"
-        >
-          <template #prefix><svg-icon icon-class="validCode" class="el-input__icon input-icon" /></template>
-        </el-input>
-        <div class="login-code">
-          <img :src="codeUrl" @click="getCode" class="login-code-img"/>
-        </div>
-      </el-form-item>
       <el-checkbox v-model="loginForm.rememberMe" style="margin:0px 0px 25px 0px;">记住账号</el-checkbox>
       <el-form-item style="width:100%;">
         <el-button
@@ -65,7 +50,6 @@
 </template>
 
 <script setup>
-import { getCodeImg } from "@/api/login"
 import Cookies from "js-cookie"
 import useUserStore from '@/store/modules/user'
 import defaultSettings from '@/settings'
@@ -80,21 +64,15 @@ const { proxy } = getCurrentInstance()
 const loginForm = ref({
   username: "admin",
   password: "",
-  rememberMe: false,
-  code: "",
-  uuid: ""
+  rememberMe: false
 })
 
 const loginRules = {
   username: [{ required: true, trigger: "blur", message: "请输入您的账号" }],
-  password: [{ required: true, trigger: "blur", message: "请输入您的密码" }],
-  code: [{ required: true, trigger: "change", message: "请输入验证码" }]
+  password: [{ required: true, trigger: "blur", message: "请输入您的密码" }]
 }
 
-const codeUrl = ref("")
 const loading = ref(false)
-// 验证码开关
-const captchaEnabled = ref(true)
 // 注册开关
 const register = ref(false)
 const redirect = ref(undefined)
@@ -130,21 +108,7 @@ function handleLogin() {
         router.push({ path: redirect.value || "/", query: otherQueryParams })
       }).catch(() => {
         loading.value = false
-        // 重新获取验证码
-        if (captchaEnabled.value) {
-          getCode()
-        }
       })
-    }
-  })
-}
-
-function getCode() {
-  getCodeImg().then(res => {
-    captchaEnabled.value = res.captchaEnabled === undefined ? true : res.captchaEnabled
-    if (captchaEnabled.value) {
-      codeUrl.value = "data:image/gif;base64," + res.img
-      loginForm.value.uuid = res.uuid
     }
   })
 }
@@ -160,7 +124,6 @@ function getCookie() {
   }
 }
 
-getCode()
 getCookie()
 </script>
 
@@ -202,15 +165,6 @@ getCookie()
   text-align: center;
   color: #bfbfbf;
 }
-.login-code {
-  width: 33%;
-  height: 40px;
-  float: right;
-  img {
-    cursor: pointer;
-    vertical-align: middle;
-  }
-}
 .el-login-footer {
   height: 40px;
   line-height: 40px;
@@ -222,9 +176,5 @@ getCookie()
   font-family: Arial;
   font-size: 12px;
   letter-spacing: 1px;
-}
-.login-code-img {
-  height: 40px;
-  padding-left: 12px;
 }
 </style>

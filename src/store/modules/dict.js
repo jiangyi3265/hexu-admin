@@ -7,7 +7,7 @@ const useDictStore = defineStore(
     actions: {
       // 获取字典
       getDict(_key) {
-        if (_key == null && _key == "") {
+        if (_key == null || _key === "") {
           return null
         }
         try {
@@ -22,11 +22,12 @@ const useDictStore = defineStore(
       },
       // 设置字典
       setDict(_key, value) {
-        if (_key !== null && _key !== "") {
-          this.dict.push({
-            key: _key,
-            value: value
-          })
+        if (_key != null && _key !== "") {
+          const existing = this.dict.find(item => item.key == _key)
+          if (existing) {
+            existing.value = value
+            this.dict = this.dict.filter(item => item === existing || item.key != _key)
+          } else this.dict.push({ key: _key, value })
         }
       },
       // 删除字典

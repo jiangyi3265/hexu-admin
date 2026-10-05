@@ -6,6 +6,7 @@ import { tansParams, blobValidate } from '@/utils/ruoyi'
 import cache from '@/plugins/cache'
 import { saveAs } from 'file-saver'
 import useUserStore from '@/store/modules/user'
+import { responseErrorMessage } from './http-error'
 
 let downloadLoadingInstance
 // 是否显示重新登录
@@ -69,7 +70,7 @@ service.interceptors.request.use(config => {
   return config
 }, error => {
     console.log(error)
-    Promise.reject(error)
+    return Promise.reject(error)
 })
 
 // 响应拦截器
@@ -103,21 +104,15 @@ service.interceptors.response.use(res => {
       return Promise.reject(new Error(msg))
     } else if (code !== 200) {
       ElNotification.error({ title: msg })
-      return Promise.reject('error')
+      return Promise.reject(new Error(msg))
     } else {
       return  Promise.resolve(res.data)
     }
   },
-  error => {
+  async error => {
     console.log('err' + error)
-    let { message } = error
-    if (message == "Network Error") {
-      message = "后端接口连接异常"
-    } else if (message.includes("timeout")) {
-      message = "系统接口请求超时"
-    } else if (message.includes("Request failed with status code")) {
-      message = "系统接口" + message.slice(-3) + "异常"
-    }
+    const message = await responseErrorMessage(error)
+    error.message = message
     ElMessage({ message: message, type: 'error', duration: 5 * 1000 })
     return Promise.reject(error)
   }

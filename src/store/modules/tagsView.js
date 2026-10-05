@@ -135,6 +135,7 @@ const useTagsViewStore = defineStore(
         return new Promise(resolve => {
           const index = this.visitedViews.findIndex(v => v.path === view.path)
           if (index === -1) {
+            resolve([...this.visitedViews])
             return
           }
           this.visitedViews = this.visitedViews.filter((item, idx) => {
@@ -158,6 +159,7 @@ const useTagsViewStore = defineStore(
         return new Promise(resolve => {
           const index = this.visitedViews.findIndex(v => v.path === view.path)
           if (index === -1) {
+            resolve([...this.visitedViews])
             return
           }
           this.visitedViews = this.visitedViews.filter((item, idx) => {
