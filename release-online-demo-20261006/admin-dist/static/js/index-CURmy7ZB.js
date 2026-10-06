@@ -1,0 +1,1 @@
+import{_ as o}from"./index-B4fYMGWZ.js";import{r as s,o as n,c as t,e as l,i as c}from"./index-Czt2JIbF.js";const _={__name:"index",setup(i){const e=s("https://fenxiao.web.oksja.cn/prod-api/druid/login.html");return(p,r)=>(n(),t("div",null,[l(c(o),{src:e.value,"onUpdate:src":r[0]||(r[0]=a=>e.value=a)},null,8,["src"])]))}};export{_ as default};

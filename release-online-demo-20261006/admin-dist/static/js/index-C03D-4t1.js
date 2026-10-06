@@ -1,0 +1,1 @@
+import{_ as n}from"./index-B4fYMGWZ.js";import{r as o,o as t,q as i,B as p,i as e}from"./index-Czt2JIbF.js";const _={__name:"index",setup(c){const r=o("https://fenxiao.web.oksja.cn/prod-api/swagger-ui/index.html");return(l,s)=>(t(),i(e(n),{src:e(r),"onUpdate:src":s[0]||(s[0]=a=>p(r)?r.value=a:null)},null,8,["src"]))}};export{_ as default};

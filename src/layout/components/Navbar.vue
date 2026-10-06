@@ -9,6 +9,7 @@
     </template>
 
     <div class="right-menu">
+      <span v-if="demoMode" class="demo-mode">演示模式 · 资金为模拟</span>
       <template v-if="appStore.device !== 'mobile'">
         <el-tooltip content="主题模式" effect="dark" placement="bottom">
           <div class="right-menu-item hover-effect theme-switch-wrapper" @click="toggleTheme">
@@ -46,6 +47,7 @@
 
 <script setup>
 import { ElMessageBox } from 'element-plus'
+import { onMounted, ref } from 'vue'
 import Breadcrumb from '@/components/Breadcrumb'
 import TopNav from '@/components/TopNav'
 import TopBar from './TopBar'
@@ -58,6 +60,13 @@ import useSettingsStore from '@/store/modules/settings'
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
+const demoMode = ref(false)
+onMounted(async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_APP_BASE_API}/hexu/app/channel-mode`)
+    demoMode.value = response.ok && (await response.json())?.data?.demo === true
+  } catch { demoMode.value = false }
+})
 
 function toggleSideBar() {
   appStore.toggleSideBar()
@@ -135,6 +144,7 @@ async function toggleTheme(event) {
 </script>
 
 <style lang='scss' scoped>
+.demo-mode{display:inline-flex;align-items:center;margin-right:12px;padding:4px 9px;border-radius:4px;background:#fff3d8;color:#6f4d13;font-size:12px;white-space:nowrap}
 .navbar.nav3 {
   .hamburger-container {
     display: none !important;
@@ -225,7 +235,7 @@ async function toggleTheme(event) {
 
         svg {
           transition: transform 0.3s;
-          
+
           &:hover {
             transform: scale(1.15);
           }

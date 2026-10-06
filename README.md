@@ -56,6 +56,8 @@ npm run preview
 
 另有 `npm run build:stage` 用于 staging 模式。dist 为生成目录，已排除提交。生产 API 前缀由 VITE_APP_BASE_API 配置，默认 /prod-api；生产服务器需将该前缀转发至后端并去掉前缀，preview 只提供静态文件服务。
 
+正式后台域名为 `https://fenxiao.web.oksja.cn`，当前 `.env.production` 将 API 指向该域名的 `/prod-api`。对应的 HTTPS 和反向代理模板位于后端仓库 `deploy/nginx-https.conf.example`。
+
 .env 文件在本机创建并被 Git 忽略。VITE_* 变量会进入浏览器构建产物，只能填写公开参数，不要放置任何服务端密钥。
 
 ## 项目结构

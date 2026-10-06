@@ -4,6 +4,7 @@
     <el-scrollbar wrap-class="scrollbar-wrapper">
       <el-menu
         :default-active="activeMenu"
+        :default-openeds="defaultOpeneds"
         :collapse="isCollapse"
         :background-color="getMenuBackground"
         :text-color="getMenuTextColor"
@@ -38,6 +39,17 @@ const settingsStore = useSettingsStore()
 const permissionStore = usePermissionStore()
 
 const sidebarRouters = computed(() => permissionStore.sidebarRouters)
+const defaultOpeneds = computed(() => {
+  const groups = sidebarRouters.value.filter(menu =>
+    !menu.hidden && menu.children?.some(child => !child.hidden)
+  )
+  const currentGroup = groups.find(menu => {
+    const path = menu.path.startsWith('/') ? menu.path : `/${menu.path}`
+    return route.path === path || route.path.startsWith(`${path}/`)
+  })
+  const group = currentGroup || groups[0]
+  return group ? [group.path] : []
+})
 const showLogo = computed(() => settingsStore.sidebarLogo)
 const sideTheme = computed(() => settingsStore.sideTheme)
 const theme = computed(() => settingsStore.theme)

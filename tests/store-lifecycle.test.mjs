@@ -58,6 +58,31 @@ for (const failedStep of ['info', 'menus', null]) test(`路由 guard 返回完�
   } else { assert.equal(logouts, 0); assert.equal(added.length, 1); assert.equal(navigations[0].replace, true) }
 })
 
+for (const cached of [false, true]) test(`后台首页进入首个有权限的菜单页面（${cached ? '已加载菜单' : '首次登录'}）`, async () => {
+  let guard
+  const destinations = []
+  const menus = [
+    { path: '/hidden', hidden: true, component: {} },
+    { path: '/hexu', children: [
+      { path: 'overview', hidden: true, component: {} },
+      { path: 'applications', component: {} }
+    ] }
+  ]
+  vm.runInNewContext(source('permission.js'), {
+    router: { beforeEach: callback => { guard = callback }, afterEach() {}, addRoute() {} },
+    NProgress: { configure() {}, start() {}, done() {} },
+    getToken: () => 'token', useUserStore: () => ({ roles: cached ? ['admin'] : [], getInfo: async () => {} }),
+    useSettingsStore: () => ({ setTitle() {} }),
+    usePermissionStore: () => ({ addRoutes: menus, generateRoutes: async () => menus }),
+    isRelogin: { show: false }, ElMessage: { error() {} },
+    isHttp: value => /^https?:/.test(value), isPathMatch: (pattern, path) => pattern === path
+  })
+  await guard({ path: '/index', fullPath: '/index', meta: {} }, {}, destination => destinations.push(destination))
+  assert.equal(destinations.length, 1)
+  assert.equal(destinations[0].path, '/hexu/applications')
+  assert.equal(destinations[0].replace, true)
+})
+
 test('布局存储损坏、空、nullable、非对象或不可用时回退默认；合法false/0保持', () => {
   for (const value of ['{broken', '', null, 'null', '[]', 'true', '42', '"text"']) assert.deepEqual(readLayoutSetting(() => ({ getItem: () => value })), {})
   assert.deepEqual(readLayoutSetting(() => { throw new Error('storage disabled') }), {})

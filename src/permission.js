@@ -17,6 +17,23 @@ const isWhiteList = (path) => {
   return whiteList.some(pattern => isPathMatch(pattern, path))
 }
 
+function firstVisibleMenuPath(routes, parentPath = '') {
+  for (const route of routes || []) {
+    if (route.hidden || !route.path || isHttp(route.path)) continue
+    const path = route.path.startsWith('/') ? route.path : `${parentPath}/${route.path}`
+    const fullPath = path.replace(/\/+/g, '/')
+    if (route.children?.length) {
+      const childPath = firstVisibleMenuPath(route.children, fullPath)
+      if (childPath) return childPath
+    } else if (route.component && fullPath !== '/' && fullPath !== '/index') {
+      return fullPath
+    }
+  }
+  return ''
+}
+
+const isHome = path => path === '/' || path === '/index'
+
 router.beforeEach((to, from, next) => {
   NProgress.start()
   if (getToken()) {
@@ -40,7 +57,8 @@ router.beforeEach((to, from, next) => {
                 router.addRoute(route) // 动态添加可访问路由表
               }
             })
-            next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
+            const homePath = isHome(to.path) ? firstVisibleMenuPath(accessRoutes) : ''
+            next(homePath ? { path: homePath, replace: true } : { ...to, replace: true }) // 确保动态路由已添加
           })
         }).catch(err => {
           isRelogin.show = false
@@ -51,7 +69,9 @@ router.beforeEach((to, from, next) => {
           })
         })
       } else {
-        next()
+        const homePath = isHome(to.path) ? firstVisibleMenuPath(usePermissionStore().addRoutes) : ''
+        if (homePath) next({ path: homePath, replace: true })
+        else next()
       }
     }
   } else {
