@@ -4,8 +4,18 @@ import fs from 'node:fs'
 import { memberProfilePath } from '../src/api/hexu/contracts.js'
 import { cloneProductForm, emptyProductForm, normalizeDecorationForm, platformPointPaths, profileAvatarUrl, profileRows, selectedAttachmentIds, settingJsonError, workspaceActionError, imageUploadError, csvCell, decorationUploadError, removeDecorationAttachment, detailFieldLabel, detailFieldValue, workspaceListRow, workspaceListCell, workspaceStatusCell, workspaceRankCell, workspaceExportCell, formatCurrency, workspaceDetailRecord, detailFieldIsMoney, businessDateTime, productPreviewAsset } from '../src/views/hexu/workspace-model.js'
 import { modules, labels, settingFields } from '../src/views/hexu/modules.js'
+import { workspaceTabs } from '../src/views/hexu/workspace-async.js'
 import { responseErrorMessage } from '../src/utils/http-error.js'
 import { reportFilterError, reportDisplayCell } from '../src/views/hexu/reports/model.js'
+
+test('审计页仅在备份接口可用时显示备份任务，其余页签与模块不变', () => {
+  const auditTabs = modules.audit.tabs
+  assert.deepEqual(workspaceTabs('audit', auditTabs, false).map(([, path]) => path), [
+    'resources/audit', 'resources/inventory', 'resources/ledger'
+  ])
+  assert.equal(workspaceTabs('audit', auditTabs, true), auditTabs)
+  assert.equal(workspaceTabs('finance', modules.finance.tabs, false), modules.finance.tabs)
+})
 
 test('现金售后验收后可由后台发起原路退款，并明确等待渠道回执', () => {
   const view = fs.readFileSync(new URL('../src/views/hexu/Workspace.vue', import.meta.url), 'utf8')

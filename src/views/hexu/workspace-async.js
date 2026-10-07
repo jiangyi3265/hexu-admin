@@ -12,3 +12,11 @@ export function createLatestContextGate(context) {
 
 export const workspaceExportSnapshot = ({ shopId, resource, title, filter, columns, rows }) =>
   ({ shopId, resource, title, filter, columns: columns.map(column => [...column]), rows: JSON.parse(JSON.stringify(rows)) })
+
+// The backup API exists only when the backend runs with the hexu-dev profile.
+export const backupEnabled = import.meta.env?.VITE_HEXU_BACKUPS_ENABLED === 'true'
+
+export const workspaceTabs = (module, tabs = [], backupEnabled = false) =>
+  module === 'audit' && !backupEnabled
+    ? tabs.filter(([, path]) => path !== 'backups')
+    : tabs

@@ -5,7 +5,7 @@ import vm from 'node:vm'
 import { computed, reactive, ref, watch, nextTick } from 'vue'
 import { readLayoutSetting } from '../src/store/state-utils.js'
 import * as workspaceModel from '../src/views/hexu/workspace-model.js'
-import { createLatestContextGate, workspaceExportSnapshot } from '../src/views/hexu/workspace-async.js'
+import { createLatestContextGate, workspaceExportSnapshot, workspaceTabs } from '../src/views/hexu/workspace-async.js'
 import { modules, labels, settingFields } from '../src/views/hexu/modules.js'
 
 const source = path => readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8').replace(/^import .*\r?\n/gm, '').replace(/^export default .*$/gm, '').replace(/^export (function|const|let) /gm, '$1 ')
@@ -168,7 +168,7 @@ test('真实Workspace脚本同路径query更换更新scope/search并清详情；
   const route = reactive({ query: { shopId: '1', refundId: 'R1' } }), reads = [], stops = []
   let mounted, state
   vm.runInNewContext(script + '\ncapture({shopId,search,drawer,selected,saving,uploading})', {
-    ...workspaceModel, createLatestContextGate, workspaceExportSnapshot, modules, labels, settingFields, ref, computed,
+    ...workspaceModel, createLatestContextGate, workspaceExportSnapshot, workspaceTabs, backupEnabled: false, modules, labels, settingFields, ref, computed,
     watch: (...args) => { const stop = watch(...args); stops.push(stop); return stop }, useRoute: () => route, defineProps: () => ({ module: 'refunds' }),
     onMounted: callback => { mounted = callback }, onUnmounted() {}, listShops: async () => ({ data: [{ id: 1 }, { id: 2 }, { id: 3 }] }),
     query: async (path, shopId) => { reads.push({ path, shopId }); return { data: [] } }, clearTimeout() {}, URL: { revokeObjectURL() {} },

@@ -11,6 +11,12 @@ export const memberProfile=(memberId,shopId)=>request({url:base+memberProfilePat
 export const command=(operation,data,key)=>idempotentPost(base+'/commands/'+operation,data,key)
 export const bankPayoutResult=(data,key)=>command('bank-payout-result',data,key)
 export const agencyCommand=(path,data,key)=>idempotentPost(base+'/agency/'+path,data,key)
+export const agentTreeChildren=(shopId,parentId=0,afterId=0)=>request({url:base+'/agent-tree/children',params:{shopId,parentId,afterId}})
+export const agentTreeSearch=(shopId,query='',region='',afterId=0)=>request({url:base+'/agent-tree/search',params:{shopId,query,region,afterId}})
+export const agentTreeDetail=(shopId,id)=>request({url:base+'/agent-tree/'+encodeURIComponent(id),params:{shopId}})
+export const agentTreeRegions=shopId=>request({url:base+'/agent-tree/regions',params:{shopId}})
+export const agentRegionOptions=(shopId,query)=>request({url:base+'/agent-tree/region-options',params:{shopId,query}})
+export const saveAgentRegions=(shopId,id,regions,reason)=>idempotentPost(base+'/agent-tree/'+encodeURIComponent(id)+'/regions',{shopId,regions,reason})
 export const attachment=id=>request({url:'/hexu/app/attachments/'+encodeURIComponent(id),responseType:'blob'})
 export const orderCover=(orderId,lineId)=>request({url:'/hexu/app/attachments/order-cover/'+encodeURIComponent(orderId)+'/'+encodeURIComponent(lineId),responseType:'blob'})
 
