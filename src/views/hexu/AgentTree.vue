@@ -46,10 +46,10 @@
           <h3 class="agent-children-title">直接下级明细</h3>
           <el-alert v-if="childError" :title="childError" type="error" :closable="false"/>
           <AgentTreeBranch v-for="item in selectedChildren" :key="item.id" :node="item" :shop-id="shopId" @select="select"/>
-          <span v-if="childLoading&&!selectedChildren.length">读取下级中…</span>
-          <span v-else-if="!childLoading&&!selectedChildren.length" class="agent-region-note">暂无直接下级代理</span>
+          <div v-if="childLoading&&!selectedChildren.length">读取下级中…</div>
+          <div v-else-if="!childLoading&&!selectedChildren.length" class="agent-region-note">暂无直接下级代理</div>
           <el-button v-if="childCursor" link :loading="childLoading" @click="loadSelectedChildren(selected.id)">加载更多下级</el-button>
-          <el-button v-if="canEdit" type="primary" plain class="agent-region-edit" @click="openEditor">设置经营区域</el-button>
+          <div v-if="canEdit" class="agent-region-edit"><el-button type="primary" plain @click="openEditor">设置经营区域</el-button></div>
           <p class="agent-region-note">经营区域用于展示和筛选，不调整代理上下级、客户归属或收益。</p>
         </template>
         <el-empty v-else description="点击代理查看明细" :image-size="72"/>
