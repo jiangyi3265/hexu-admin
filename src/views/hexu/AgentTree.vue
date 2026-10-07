@@ -1,5 +1,8 @@
 <template>
   <div class="agent-directory">
+    <el-alert title="怎么看代理关系" type="info" :closable="false" class="agent-directory-guide">
+      <template #default>左侧点代理姓名查看明细，点 ▸ 展开他的直接下级；右侧依次显示上级、直接下级名单和经营区域。“全部下级”包含更深层级的代理。</template>
+    </el-alert>
     <div class="agent-directory-tools">
       <el-input v-model="query" clearable placeholder="代理姓名或编号" style="max-width:240px" @keyup.enter="loadList"/>
       <el-select v-model="region" clearable filterable placeholder="按经营区域筛选" style="width:260px" @change="loadList">
@@ -24,7 +27,7 @@
       </section>
       <section class="agent-directory-detail" v-loading="detailLoading">
         <template v-if="selected">
-          <h3>代理详情</h3>
+          <h3>{{selected.name}} 的上下级明细</h3>
           <div class="agent-ancestors">
             <span v-if="selected.ancestors[0]?.parent_id" class="agent-external-parent">{{externalParentLabel(selected)}} ›</span>
             <el-button v-for="(item,index) in selected.ancestors" :key="item.id" link type="primary" @click="select(item.id)">{{index?'› ':''}}{{item.name}}</el-button>
@@ -34,10 +37,10 @@
             <el-descriptions-item label="代理姓名">{{selected.name}}</el-descriptions-item>
             <el-descriptions-item label="职级">{{rankName(selected.rank_no)}}</el-descriptions-item>
             <el-descriptions-item label="直接上级">{{parentLabel(selected)}}</el-descriptions-item>
-            <el-descriptions-item label="直接下级">{{selected.childCount}} 人</el-descriptions-item>
-            <el-descriptions-item label="全部下级">{{selected.descendantCount}} 人</el-descriptions-item>
+            <el-descriptions-item label="直接下级（紧接下一层）">{{selected.childCount}} 人</el-descriptions-item>
+            <el-descriptions-item label="全部下级（含更深层）">{{selected.descendantCount}} 人</el-descriptions-item>
             <el-descriptions-item label="直属客户">{{selected.customerCount}} 人</el-descriptions-item>
-            <el-descriptions-item label="经营区域">{{selected.regions?.join('、')||'未配置'}}</el-descriptions-item>
+            <el-descriptions-item label="经营区域">{{selected.regions?.join('、')||'未配置（由商城拥有者设置）'}}</el-descriptions-item>
             <el-descriptions-item label="状态">{{selected.status}}</el-descriptions-item>
           </el-descriptions>
           <h3 class="agent-children-title">直接下级明细</h3>
@@ -95,6 +98,7 @@ async function loadMore(){
     if(requestId!==listRequest)return
     rows.value.push(...response.data.items)
     cursor.value=response.data.nextCursor||0
+    if(!selected.value&&!props.initialAgentId&&after===0&&rows.value.length)select(rows.value[0].id)
   }catch(e){if(requestId===listRequest)error.value=e.message||'读取代理关系失败'}
   finally{if(requestId===listRequest)loading.value=false}
 }
@@ -162,6 +166,7 @@ onMounted(()=>{loadList();loadRegions();if(props.initialAgentId)select(props.ini
 
 <style scoped>
 .agent-directory-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.agent-directory-guide{margin-bottom:16px}
 .agent-directory-grid{display:grid;grid-template-columns:minmax(330px,1fr) minmax(300px,420px);gap:18px}
 .agent-directory-list,.agent-directory-detail{border:1px solid #e4e9e4;border-radius:8px;padding:16px;min-height:320px;max-height:65vh;overflow:auto}
 .agent-directory h3{margin:0 0 12px;font-size:16px}
