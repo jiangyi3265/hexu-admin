@@ -111,9 +111,9 @@ test('后台订单明细使用同单商品图片路径和中文支付时间，�
   assert.equal(detailFieldLabel('encrypted', { module: 'audit', tab: 'backups' }), '已加密')
   assert.equal(detailFieldLabel('scheduled', { module: 'audit', tab: 'backups' }), '自动备份已启用')
   const view = fs.readFileSync(new URL('../src/views/hexu/Workspace.vue', import.meta.url), 'utf8')
-  const preview = fs.readFileSync(new URL('../src/views/hexu/OrderItemsPreview.vue', import.meta.url), 'utf8')
-  assert.match(view, /<OrderItemsPreview v-if="drawer&&module==='orders'" :items="selected\.items"\/>/)
-  assert.match(preview, /<ProductImagePreview v-if="line\.asset" :asset="line\.asset"/)
+  const structured = fs.readFileSync(new URL('../src/views/hexu/StructuredDetail.vue', import.meta.url), 'utf8')
+  assert.match(view, /<StructuredDetail :value="selected\.items" field-key="items"/)
+  assert.match(structured, /<ProductImagePreview v-else-if="imageValue" :asset="content"/)
 })
 
 test('后台积分售后显示退回积分并保留现金退款原值', () => {

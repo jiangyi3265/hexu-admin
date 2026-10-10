@@ -1,6 +1,6 @@
 <template>
   <div v-if="asset" class="product-image-preview">
-    <img v-if="src && !failed" :src="src" alt="商品封面" @error="failed = true" />
+    <img v-if="src && !failed" :src="src" :alt="alt" @error="failed = true" />
     <span v-else>商品封面加载失败</span>
   </div>
 </template>
@@ -10,7 +10,7 @@ import {onUnmounted, ref, watch} from 'vue'
 import {attachment, orderCover} from '@/api/hexu'
 import {productPreviewAsset} from './workspace-model'
 
-const props = defineProps({asset: {type: String, default: ''}})
+const props = defineProps({asset: {type: String, default: ''}, alt: {type: String, default: '商品封面'}})
 const src = ref('')
 const failed = ref(false)
 let blobUrl = ''

@@ -6,7 +6,7 @@
 <el-result v-else-if="module==='overview'" icon="warning" title="经营数据不可访问" :sub-title="error"><template #extra><el-button @click="load">重试读取</el-button></template></el-result>
  <el-result v-else-if="error&&module!=='applications'" icon="warning" title="业务数据不可访问" :sub-title="error"><template #extra><el-button @click="load">重试读取</el-button></template></el-result>
  <section v-else class="hx-section"><div v-if="module==='agents'&&!error" class="hx-agent-guide"><div><strong>查看代理上下级与经营区域</strong><p>选择商城后点“打开关系明细”；左侧展开下级，右侧查看当前代理的上级、直接下级名单和区域。</p></div><el-button type="primary" @click="openAgentTree()">打开关系明细</el-button></div><el-tabs v-if="visibleTabs.length" v-model="activeTab" :before-leave="() => !saving&&!uploading" @tab-change="handleTabChange"><el-tab-pane v-for="t in visibleTabs" :key="t[1]" :label="t[0]" :name="t[1]"/></el-tabs><el-result v-if="error" icon="warning" title="当前页签不可访问" :sub-title="error"><template #extra><el-button @click="load">重试读取</el-button></template></el-result><template v-else><div class="hx-toolbar"><el-input v-model="search" placeholder="搜索当前列表中的编号、名称或状态" clearable style="max-width:360px"/><div><el-button v-if="activeTab==='resources/staff'" type="primary" @click="editStaff()">分配商城岗位</el-button><el-button v-if="module==='settings'" @click="editMarketing">营销金额试算</el-button><el-button v-if="module==='products'" type="primary" @click="editProduct()">新增商品</el-button><el-button v-if="module==='settings'&&activeTab.startsWith('documents/')||module==='settings'&&activeTab==='rules'" type="primary" @click="editSetting()">{{activeTab==='rules'?'新建分红版本':'新增配置'}}</el-button><el-button v-if="activeTab==='documents/shop_transfer'" type="primary" @click="editSetting()">申请商城交接</el-button><el-button v-if="activeTab==='documents/team_migration'" type="primary" @click="newMigration">生成团队迁移名单</el-button><el-button v-if="activeTab==='resources/assessmentPeriods'||activeTab==='documents/downgrade'" @click="runAssessment">核算已结束周期</el-button><el-button v-if="activeTab==='resources/reconciliationLines'&&statementBatch" @click="statementBatch='';load()">显示最近明细</el-button><el-button v-if="activeTab==='resources/reconciliationBatches'" type="primary" @click="newStatement">导入账单</el-button><el-button v-if="activeTab==='backups'" type="primary" @click="backupNow">立即加密备份</el-button><el-button @click="exportRows">导出当前数据</el-button></div></div><el-table :data="filteredRows" stripe border empty-text="暂无业务数据，新的申请和交易会在此同步" :row-key="row=>row.id??row.user_id??(row.campaign_id?row.campaign_id+':'+(row.order_id||'')+':'+(row.agent_id||row.recipient_agent_id||'')+':'+(row.reward_type||''):row.member_id)"><el-table-column v-for="col in tableColumns" :key="col[0]" :prop="col[0]" :label="col[1]" :min-width="columnMinWidth(col[0])" :width="module==='products'&&col[0]==='status'?100:undefined" :fixed="module==='products'&&col[0]==='status'?'right':false" :show-overflow-tooltip="!wrapListKey(col[0])" :class-name="wrapListKey(col[0])?'hx-wrap-id':''"><template #default="{row}"><el-tag v-if="col[0]==='status'" :type="earningFullyReversed(row)?'info':['REJECTED','FAILED'].includes(row.status)?'danger':['PENDING','UNPAID','WAIT_RETURN'].includes(row.status)?'warning':'success'">{{workspaceStatusCell(row,module,labels)}}</el-tag><span v-else-if="col[2]==='money'">{{row[col[0]]==null?'—':formatCurrency(row[col[0]])}}</span><div v-else-if="activeTab==='resources/pointTransfers'&&viewportWidth<=600&&col[0]==='reference_id'" class="hx-transfer-mobile"><strong>{{row.reference_id}}</strong><span>转出：{{row.sender_name||'—'}}</span><span>接收：{{row.recipient_name||'—'}}</span><span>转出 {{row.amount}} · 到账 {{row.credit}} 积分</span><span>{{workspaceListCell('created_at',row.created_at)}}</span></div><span v-else-if="col[0]==='rank_no'">{{workspaceRankCell(row.rank_no)}}</span><span v-else>{{workspaceListCell(col[0],row[col[0]],labels)}}</span></template></el-table-column><el-table-column label="操作" fixed="right" :width="actionColumnWidth"><template #default="{row}"><el-button link type="primary" @click="showDetail(row)">详情</el-button><el-button v-if="module==='agents'&&activeTab==='resources/agents'" link type="primary" @click="openAgentTree(row)">上下级</el-button><el-button v-if="module==='finance'&&activeTab==='resources/withdrawals'&&row.channel==='BANK'&&['APPROVED','PROCESSING'].includes(row.status)" link type="primary" :disabled="saving" @click="openBankPayout(row)">登记打款结果</el-button><el-button v-if="module==='finance'&&activeTab==='resources/withdrawals'&&row.channel&&row.channel!=='BANK'&&row.status==='APPROVED'" link type="primary" :disabled="saving" @click="submitChannelPayout(row)">发起渠道打款</el-button><el-button v-if="activeTab==='resources/reconciliationBatches'" link type="primary" @click="showStatement(row)">查看明细</el-button><template v-if="module==='products'"><el-button link type="primary" @click="editProduct(row)">编辑</el-button><el-button link @click="stock(row)">调库存</el-button><el-button link @click="editBox(row)">箱规混批</el-button><el-button link @click="toggleSku(row)">{{row.status==='ACTIVE'?'下架':'审核上架'}}</el-button></template><el-button v-if="activeTab==='resources/staff'" link type="primary" @click="editStaff(row)">调整岗位</el-button><el-button v-if="activeTab==='resources/pointRiskCases'&&['PENDING','RETAINED'].includes(row.status)" link type="primary" @click="open('pointReview',row)">冻结复核</el-button><el-button v-if="module==='orders'&&row.status==='PAID'&&(!row.group||row.group.status==='FORMED')" link type="primary" @click="open('ship',row)">发货</el-button><el-button v-if="(module==='refunds'||module==='applications'||module==='finance'&&['resources/withdrawals','resources/reconciliationAdjustments'].includes(activeTab))&&['PENDING','SUPPLEMENT','REVIEW_REQUIRED'].includes(row.status)" link type="primary" @click="open('review',row)">审核</el-button><el-button v-if="module==='refunds'&&row.status==='WAIT_EXCHANGE'" link type="primary" @click="open('exchange',row)">换货发货</el-button><el-button v-if="module==='refunds'&&row.status==='WAIT_RETURN'" link type="primary" @click="open('inspect',row)">验收</el-button><el-button v-if="module==='refunds'&&row.status==='APPROVED'&&Number(row.amount)>0" link type="primary" :disabled="saving" @click="submitChannelRefund(row)">发起原路退款</el-button><el-button v-if="activeTab==='resources/channelEvents'&&row.status==='ERROR'" link type="primary" @click="retryChannel(row)">重试处理</el-button><el-button v-if="activeTab==='resources/reconciliationLines'&&!['RESOLVED','PENDING'].includes(row.status)" link @click="recheckLine(row)">重新核对</el-button><el-button v-if="activeTab==='resources/reconciliationLines'&&row.status==='AMOUNT_MISMATCH'" link type="primary" @click="open('adjustment',row)">申请调整</el-button><el-button v-if="module==='settings'&&activeTab.startsWith('documents/')&&row.status==='ACTIVE'" link type="primary" @click="editSetting(row)">编辑</el-button></template></el-table-column></el-table><div class="hx-table-foot"><span>共 {{filteredRows.length}} 条 · {{activeTab==='backups'?'平台备份任务':'当前商城数据'}}</span><span>{{activeTab==='backups'?'加密文件与密钥须分别安全保管':module==='refunds'?'现金金额按元显示，积分以积分为单位':module==='settings'?'配置按当前商城隔离':'金额单位已换算为元，原始账务以分记账'}}</span></div></template></section>
-  <el-drawer :key="detailRequest" v-model="drawer" title="业务记录详情" size="min(720px, 95vw)">
+  <el-dialog :key="detailRequest" v-model="drawer" title="业务记录详情" width="min(1200px, 96vw)" top="4vh" class="hx-detail-dialog" destroy-on-close>
     <div v-if="workflowDetail&&selectedUploads.length" class="hx-attachments"><el-button v-for="(id,i) in selectedUploads" :key="id" @click="viewAttachment(id)">查看资料 {{i+1}}</el-button></div>
     <ReviewDocumentDetail v-if="reviewDetail" :record="selected"/>
     <WorkflowDocumentDetail v-else-if="workflowDetail" :record="selected"/>
@@ -15,27 +15,31 @@
       <el-alert v-if="trackingError" :title="trackingError" type="warning" :closable="false" class="hx-tracking"/>
       <div v-else-if="tracking" class="hx-tracking">
         <h3>物流轨迹</h3>
-        <p>{{tracking.carrier||'承运商待确认'}} · {{tracking.tracking||'暂无运单号'}} · {{tracking.status==='UNAVAILABLE'?'承运商接口未配置':tracking.status||'待更新'}}</p>
+        <p>{{tracking.carrier||'承运商待确认'}} · {{tracking.tracking||'暂无运单号'}} · {{trackingStatusText(tracking.status)}}</p>
         <el-timeline v-if="tracking.events?.length"><el-timeline-item v-for="(event,i) in tracking.events" :key="i" :timestamp="event.time">{{event.description}}</el-timeline-item></el-timeline>
         <el-empty v-else description="暂无真实物流轨迹" :image-size="60"/>
       </div>
     </template>
     <MemberProfile v-if="drawer&&module==='agents'&&selected.member_id" :key="shopId+':'+selected.member_id" :member-id="selected.member_id" :shop-id="shopId"/>
     <div v-if="selectedUploads.length" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><el-button v-for="(id,i) in selectedUploads" :key="id" @click="viewAttachment(id)">{{activeTab==='resources/reconciliationAdjustments'?'查看财务凭证':'查看资料'}} {{i+1}}</el-button></div>
-    <OrderItemsPreview v-if="drawer&&module==='orders'" :items="selected.items"/>
-    <el-descriptions :column="1" :label-width="128" border>
-      <el-descriptions-item v-for="(value,key) in detailRecord" :key="key" :label="fieldLabel(key)">
+    <h3 v-if="module==='orders'" class="hx-detail-heading">订单资料</h3>
+    <el-descriptions :column="viewportWidth<900?1:2" :label-width="viewportWidth<900?120:150" border>
+      <el-descriptions-item v-for="[key,value] in detailEntries" :key="key" :label="fieldLabel(key)" :span="structuredField(key,value)||longDetailField(key)?(viewportWidth<900?1:2):1">
         <StructuredDetail v-if="structuredField(key,value)" :value="value" :field-key="key" :field-labels="structuredLabels" :labels="labels"/>
-        <span v-else :style="activeTab==='documents/support'&&key==='message'?{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}:{}">{{fieldValue(key,value)}}</span>
-        <ProductImagePreview v-if="module==='products'&&key==='asset'" :asset="value"/>
+        <ProductImagePreview v-else-if="detailImageField(key,value)" :asset="value" :alt="fieldLabel(key)"/>
+        <span v-else class="hx-detail-value">{{fieldValue(key,value)}}</span>
       </el-descriptions-item>
     </el-descriptions>
+    <section v-if="module==='orders'&&Array.isArray(selected.items)&&selected.items.length" class="hx-detail-items">
+      <h3 class="hx-detail-heading">商品明细与下单快照</h3>
+      <StructuredDetail :value="selected.items" field-key="items" :labels="labels"/>
+    </section>
     </template>
     <template v-if="module==='applications'&&['PENDING','SUPPLEMENT','REVIEW_REQUIRED'].includes(selected.status)||module==='settings'&&selected.status==='ACTIVE'&&activeTab==='documents/system_parameter'" #footer>
       <el-button v-if="module==='applications'" type="primary" @click="drawer=false;open('review',selected)">{{activeTab==='documents/support'?'回复这条留言':'审核这条申请'}}</el-button>
       <el-button v-else type="primary" @click="drawer=false;editSetting(selected)">编辑此配置</el-button>
     </template>
-  </el-drawer>
+  </el-dialog>
   <el-dialog v-model="imageDialog" :title="activeTab==='resources/reconciliationAdjustments'?'财务凭证':'已授权的业务资料'" width="min(850px,95vw)" @closed="closeAttachment"><img :src="attachmentUrl" :alt="activeTab==='resources/reconciliationAdjustments'?'财务凭证图片':'业务申请附件'" style="max-width:100%;max-height:75vh;display:block;margin:auto"/></el-dialog>
   <el-dialog v-model="agentTreeOpen" title="代理上下级与经营区域明细" width="min(1440px,96vw)" top="3vh" class="agent-tree-dialog" destroy-on-close>
     <AgentTree v-if="agentTreeOpen" :key="shopId+':'+agentTreeRoot" :shop-id="shopId" :initial-agent-id="agentTreeRoot" :can-edit="canEditAgentRegion"/>
@@ -53,13 +57,12 @@ import {bankPayoutPayload,bankPayoutError,channelSubmissionFeedback,runConfirmed
 import {modules,labels,settingFields} from './modules'
 import MemberProfile from './MemberProfile.vue'
 import ProductImagePreview from './ProductImagePreview.vue'
-import OrderItemsPreview from './OrderItemsPreview.vue'
 import ReviewDocumentDetail from './ReviewDocumentDetail.vue'
 import WorkflowDocumentDetail from './WorkflowDocumentDetail.vue'
 import AgentTree from './AgentTree.vue'
 import StructuredDetail from './StructuredDetail.vue'
 import {createLatestContextGate,workspaceExportSnapshot,backupEnabled,workspaceTabs} from './workspace-async'
-import {platformPointPaths,workspaceQueryState,cloneProductForm,emptyProductForm,normalizeDecorationForm,selectedAttachmentIds,workspaceActionError,settingJsonError,imageUploadError,csvCell,decorationUploadError,removeDecorationAttachment,detailFieldLabel,detailFieldValue,workspaceListRow,workspaceListCell,workspaceStatusCell,earningFullyReversed,workspaceRankCell,workspaceExportCell,formatCurrency,supportsReviewSupplement,workspaceReviewPayload,workspaceDetailRecord} from './workspace-model'
+import {platformPointPaths,workspaceQueryState,cloneProductForm,emptyProductForm,normalizeDecorationForm,selectedAttachmentIds,workspaceActionError,settingJsonError,imageUploadError,csvCell,decorationUploadError,removeDecorationAttachment,detailFieldLabel,detailFieldValue,workspaceListRow,workspaceListCell,workspaceStatusCell,earningFullyReversed,workspaceRankCell,workspaceExportCell,formatCurrency,supportsReviewSupplement,workspaceReviewPayload,workspaceDetailRecord,productPreviewAsset} from './workspace-model'
 const props=defineProps({module:{default:'overview'}}),config=modules[props.module]
 const route=useRoute()
 const agentTreeOpen=ref(false),agentTreeRoot=ref(0)
@@ -115,6 +118,7 @@ watch(()=>[route.query.shopId,route.query.refundId],()=>{if(!shopsReady)return;i
 watch([saving,uploading],()=>{if(pendingRouteQuery&&!saving.value&&!uploading.value){pendingRouteQuery=false;syncRouteQuery()}})
 const selectedUploads=computed(()=>selectedAttachmentIds(selected.value))
 const detailRecord=computed(()=>workspaceDetailRecord(selected.value,{module:props.module,tab:activeTab.value}))
+const detailEntries=computed(()=>Object.entries(detailRecord.value).filter(([key,value])=>props.module!=='orders'||key!=='items'||!Array.isArray(value)))
 const structuredLabels=computed(()=>Object.fromEntries((settingFields[activeTab.value.replace('documents/','')]||[]).map(([key,label])=>[key,label.replace(/\s*JSON.*$/,'')])))
 const reviewDetail=computed(()=>props.module==='applications'&&['documents/review','documents/review_append'].includes(activeTab.value))
 const workflowDetail=computed(()=>['agent_application','stocktake','system_parameter'].includes(selected.value.kind)&&['applications','settings'].includes(props.module))
@@ -135,7 +139,18 @@ const dialogTitle=computed(()=>{
  return {staff:'分配商城岗位',marketing:'营销金额试算',statement:'导入账单',adjustment:'申请账务调整',migration:'生成团队迁移名单',pointReview:'积分冻结复核',box:'箱规与混批设置',product:editing.value?'编辑商品':'新增商品',stock:'库存调整',exchange:'换货发货',ship:'订单发货',review:'审核业务申请',inspect:'退货验收',rule:'创建分红版本',setting:'编辑业务配置'}[mode.value]
 })
 const fieldLabel=k=>detailFieldLabel(k,{module:props.module,tab:activeTab.value,columns:columns.value,productFields,settingFields:settingFields[activeTab.value.replace('documents/','')]||[],record:selected.value})
-const fieldValue=(key,value)=>key==='status'&&props.module==='finance'&&activeTab.value==='resources/earnings'&&earningFullyReversed(selected.value)?'已全额冲正':props.module==='refunds'&&key==='status'&&selected.value.refund_type==='EXCHANGE'&&value==='CLOSED'?'换货已完成':detailFieldValue(key,value,labels,{module:props.module,tab:activeTab.value})
+function fieldValue(key,value){
+  if(key==='status'&&props.module==='finance'&&activeTab.value==='resources/earnings'&&earningFullyReversed(selected.value))return '已全额冲正'
+  if(props.module==='refunds'&&key==='status'&&selected.value.refund_type==='EXCHANGE'&&value==='CLOSED')return '换货已完成'
+  if(key==='shop_id'){
+    const shop=shops.value.find(item=>item.id===value)
+    if(shop)return `${shop.name}（${value}）`
+  }
+  return detailFieldValue(key,value,labels,{module:props.module,tab:activeTab.value})
+}
+const detailImageField=(key,value)=>['asset','image','icon','confirmationFile'].includes(key)&&!!productPreviewAsset(value)
+const longDetailField=key=>/^(message|content|remark|reason|review_note|error_message|description|address|note)$/.test(key)
+const trackingStatusText=status=>({UNAVAILABLE:'承运商接口未配置',IN_TRANSIT:'运输中',DELIVERED:'已送达',SIGNED:'已签收',PENDING:'待更新'})[status]||status||'待更新'
 const structuredField=(key,value)=>value!==null&&typeof value==='object'&&!(key==='region'&&Array.isArray(value))&&!(Array.isArray(value)&&value.length===0)
 async function runAssessment(){if(saving.value)return;saving.value=true;try{const r=await command('assessment-run',{shopId:shopId.value});ElMessage.success('已生成 '+r.data.periodsCreated+' 个周期记录');await load()}catch(e){ElMessage.error(e.message||'核算失败')}finally{saving.value=false}}
 function handleTabChange(){if(!selectingAccessibleTab)load()}
@@ -289,6 +304,18 @@ async function exportRows(){if(exporting)return;exporting=true;try{const snapsho
 @media(max-width:600px){.hx-agent-guide{align-items:flex-start;flex-direction:column}}
 </style>
 <style>
+.el-dialog.hx-detail-dialog:not(.is-fullscreen){display:flex;flex-direction:column;max-height:92vh;margin:4vh auto 0!important}
+.hx-detail-dialog .el-dialog__header{flex:none;padding:18px 24px;border-bottom:1px solid #e7ece6}
+.hx-detail-dialog .el-dialog__body{flex:1;min-height:0;overflow-y:auto;padding:20px 24px 28px}
+.hx-detail-dialog .el-dialog__footer{flex:none;padding:12px 24px;border-top:1px solid #e7ece6}
+.hx-detail-dialog .el-descriptions__cell{vertical-align:top}
+.hx-detail-dialog .el-descriptions__content{min-width:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.hx-detail-dialog .hx-detail-value{overflow-wrap:anywhere;white-space:pre-wrap}
+.hx-detail-dialog .hx-detail-heading{margin:18px 0 12px;color:#284935;font-size:16px;font-weight:600}
+.hx-detail-dialog .hx-detail-heading:first-child{margin-top:0}
+.hx-detail-dialog .hx-detail-items{margin-top:24px}
+.hx-detail-dialog .hx-detail-items .structured-detail-item{background:#f8faf7}
+@media(max-width:600px){.hx-detail-dialog .el-dialog__header{padding:14px 16px}.hx-detail-dialog .el-dialog__body{padding:16px}.hx-detail-dialog .el-dialog__footer{padding:12px 16px}}
 .el-dialog.agent-tree-dialog:not(.is-fullscreen){display:flex;flex-direction:column;height:min(920px,94vh);max-height:94vh;margin:3vh auto 0;margin-top:3vh!important}
 .agent-tree-dialog .el-dialog__header{flex:none}
 .agent-tree-dialog .el-dialog__body{flex:1;min-height:0;overflow:hidden;padding:12px 20px 20px}
