@@ -25,7 +25,7 @@
     <OrderItemsPreview v-if="drawer&&module==='orders'" :items="selected.items"/>
     <el-descriptions :column="1" :label-width="128" border>
       <el-descriptions-item v-for="(value,key) in detailRecord" :key="key" :label="fieldLabel(key)">
-        <pre v-if="structuredField(key,value)">{{JSON.stringify(value,null,2)}}</pre>
+        <StructuredDetail v-if="structuredField(key,value)" :value="value" :field-key="key" :field-labels="structuredLabels" :labels="labels"/>
         <span v-else :style="activeTab==='documents/support'&&key==='message'?{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}:{}">{{fieldValue(key,value)}}</span>
         <ProductImagePreview v-if="module==='products'&&key==='asset'" :asset="value"/>
       </el-descriptions-item>
@@ -57,6 +57,7 @@ import OrderItemsPreview from './OrderItemsPreview.vue'
 import ReviewDocumentDetail from './ReviewDocumentDetail.vue'
 import WorkflowDocumentDetail from './WorkflowDocumentDetail.vue'
 import AgentTree from './AgentTree.vue'
+import StructuredDetail from './StructuredDetail.vue'
 import {createLatestContextGate,workspaceExportSnapshot,backupEnabled,workspaceTabs} from './workspace-async'
 import {platformPointPaths,workspaceQueryState,cloneProductForm,emptyProductForm,normalizeDecorationForm,selectedAttachmentIds,workspaceActionError,settingJsonError,imageUploadError,csvCell,decorationUploadError,removeDecorationAttachment,detailFieldLabel,detailFieldValue,workspaceListRow,workspaceListCell,workspaceStatusCell,earningFullyReversed,workspaceRankCell,workspaceExportCell,formatCurrency,supportsReviewSupplement,workspaceReviewPayload,workspaceDetailRecord} from './workspace-model'
 const props=defineProps({module:{default:'overview'}}),config=modules[props.module]
@@ -114,6 +115,7 @@ watch(()=>[route.query.shopId,route.query.refundId],()=>{if(!shopsReady)return;i
 watch([saving,uploading],()=>{if(pendingRouteQuery&&!saving.value&&!uploading.value){pendingRouteQuery=false;syncRouteQuery()}})
 const selectedUploads=computed(()=>selectedAttachmentIds(selected.value))
 const detailRecord=computed(()=>workspaceDetailRecord(selected.value,{module:props.module,tab:activeTab.value}))
+const structuredLabels=computed(()=>Object.fromEntries((settingFields[activeTab.value.replace('documents/','')]||[]).map(([key,label])=>[key,label.replace(/\s*JSON.*$/,'')])))
 const reviewDetail=computed(()=>props.module==='applications'&&['documents/review','documents/review_append'].includes(activeTab.value))
 const workflowDetail=computed(()=>['agent_application','stocktake','system_parameter'].includes(selected.value.kind)&&['applications','settings'].includes(props.module))
 const contentReview=computed(()=>props.module==='applications'&&supportsReviewSupplement(activeTab.value))
