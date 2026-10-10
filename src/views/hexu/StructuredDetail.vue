@@ -50,7 +50,7 @@ const nestedLabels = {
   blocks: '页面内容', layout: '布局', nav: '导航', footer: '页脚'
 }
 const contextLabels = {
-  address_json: { name: '收货人', region: '所在地区', detail: '详细地址', phone: '联系电话' },
+  address_json: { name: '收货人', region: '所在地区', province: '省份', city: '城市', district: '区县', detail: '详细地址', phone: '联系电话' },
   shipping_json: { carrier: '承运商', tracking: '物流单号', shippedAt: '发货时间', autoReceiveDays: '自动收货天数' },
   snapshot_json: { asset: '下单时商品图片', prices: '各职级价格', bps: '各职级分红比例', rank: '下单时身份' },
   items: { id: '订单明细编号', unit_price: '单价', paid: '实付', refunded_paid: '已退金额', snapshot_json: '下单快照' }
