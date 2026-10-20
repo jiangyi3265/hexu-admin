@@ -24,7 +24,7 @@
       </el-tabs>
 
       <template v-if="tab === 'merchant'">
-        <el-alert v-if="merchant.paymentMode === 'DIRECT'" title="直营或公司批发商城使用公司直连商户。渠道凭据由服务端配置，经销商独立进件流程不适用。" type="info" :closable="false" show-icon class="hx-alert" />
+        <el-alert v-if="merchant.paymentMode === 'DIRECT'" :title="merchant.sharedDirect ? '所有商城订单由公司商户号统一收款，店铺无需独立进件。渠道凭据由服务端配置。' : '直营或公司批发商城使用公司直连商户。渠道凭据由服务端配置，经销商独立进件流程不适用。'" type="info" :closable="false" show-icon class="hx-alert" />
         <el-alert v-if="merchant.paymentMode === 'PARTNER' && merchant.canManage === false" title="当前账号仅可查看商户状态，提交资料和补录渠道编号需由商城负责人或平台管理员操作。" type="info" :closable="false" show-icon class="hx-alert" />
         <el-alert
           v-if="merchant.paymentMode === 'PARTNER' && !merchant.paymentReady"
@@ -39,7 +39,7 @@
           </article>
         </div>
         <el-descriptions :column="2" border class="hx-details">
-          <el-descriptions-item label="收款主体">{{ merchant.subjectName || '待提交' }}</el-descriptions-item>
+          <el-descriptions-item label="收款主体">{{ merchant.subjectName || (merchant.sharedDirect ? '由平台统一维护' : '待提交') }}</el-descriptions-item>
           <el-descriptions-item :label="merchant.paymentMode === 'PARTNER' ? '子商户号' : '收款商户号'">{{ merchant.merchantNo || '待授权' }}</el-descriptions-item>
           <el-descriptions-item label="收款模式">{{ merchant.paymentMode === 'PARTNER' ? '服务商子商户' : merchant.paymentMode === 'DIRECT' ? '直连商户' : '待确认' }}</el-descriptions-item>
           <el-descriptions-item label="小程序 AppID">{{ merchant.appId || '待授权' }}</el-descriptions-item>
@@ -50,7 +50,7 @@
           <el-descriptions-item label="异常说明" :span="2">{{ merchant.abnormalReason || '无' }}</el-descriptions-item>
           <el-descriptions-item v-if="merchant.rejectionReason" label="驳回原因" :span="2">{{ merchant.rejectionReason }}</el-descriptions-item>
           <el-descriptions-item label="收款准备状态" :span="2">
-            <el-tag :type="merchant.paymentReady ? 'success' : 'warning'">{{ merchant.paymentReady ? '已具备收款条件' : '未就绪' }}</el-tag>
+            <el-tag :type="merchant.paymentReady ? 'success' : 'warning'">{{ merchant.paymentReady ? (merchant.sharedDirect ? '渠道配置已就绪' : '已具备收款条件') : '未就绪' }}</el-tag>
           </el-descriptions-item>
         </el-descriptions>
         <AttachmentGallery :ids="merchant.attachmentIds"/>
